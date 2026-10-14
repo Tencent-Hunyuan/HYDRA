@@ -1,0 +1,42 @@
+# HYDRA unified multimodal model — training & inference
+# Tested with Python 3.12, CUDA 12.x
+
+# --- core ---
+torch>=2.5
+torchvision>=0.20
+# <5 is required: transformers 5.x removed `SlidingWindowCache` from
+# transformers.cache_utils, which models/qwen2.py imports at module level.
+transformers>=4.45,<5
+accelerate>=1.0
+deepspeed>=0.14
+numpy>=1.26
+pillow>=10.0
+pyyaml>=6.0
+tqdm>=4.66
+
+# --- model / architecture ---
+einops>=0.8
+timm>=1.0
+diffusers>=0.30
+omegaconf>=2.3
+# Must match omegaconf 2.3's expected antlr4 runtime; 4.11 breaks OmegaConf.load.
+antlr4-python3-runtime==4.9.3
+safetensors>=0.4
+
+# --- data ---
+scikit-image>=0.22
+pandas>=2.0
+pyarrow>=14.0
+sentencepiece>=0.2
+decord>=0.6               # video frame decoding (VIST dataset)
+
+# --- logging ---
+tensorboard>=2.14
+wandb>=0.16
+
+# --- flow matching ODE solver ---
+torchdiffeq>=0.2
+
+# --- optional (speeds up attention) ---
+# flash-attn>=2.5         # pip install flash-attn --no-build-isolation
+# apex                     # NVIDIA apex for FusedRMSNorm (falls back to PyTorch)
