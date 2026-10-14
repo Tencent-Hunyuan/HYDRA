@@ -1,0 +1,19 @@
+# Example multi-dataset configuration for MMU (understanding) training.
+#
+# Each entry points to a JSON annotation file (LLaVA-style conversation
+# format) together with the root directory holding the referenced images.
+# Sampling weights are optional; omit `sample_weight` for uniform sampling.
+#
+# Example JSON annotation format:
+#   [{"id": "0000001",
+#     "image": "images/0000001.jpg",
+#     "conversations": [
+#        {"from": "human", "value": "<image>\nDescribe this image."},
+#        {"from": "gpt",  "value": "A cat sitting on a sofa."}]}]
+
+datasets:
+  - json_path: /path/to/your/annotation_file_1.json
+    data_root: /path/to/your/image_folder_1
+    sample_weight: 1.0
+  - json_path: /path/to/your/annotation_file_2.json
+    data_root: /path/to/your/image_folder_2
