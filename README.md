@@ -222,15 +222,21 @@ written as lossless PNGs, then rFID over the two directories.
 
 ## 📊 Results
 
-![SOTA comparison](assets/sota_comparison.png)
+<p align="center">
+  <img src="assets/sota_comparison.png" alt="SOTA comparison" width="560">
+</p>
 
 HYDRA outperforms previous native UMMs and several task-specific models.
 
-![Generation comparison](assets/gen_compare_1.png)
+<p align="center">
+  <img src="assets/gen_compare_1.png" alt="Generation comparison" width="760">
+</p>
 
 Generation comparison with other unified models.
 
-![Reconstruction comparison](assets/recon_compare.png)
+<p align="center">
+  <img src="assets/recon_compare.png" alt="Reconstruction comparison" width="760">
+</p>
 
 Reconstruction quality on ImageNet.
 
