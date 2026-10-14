@@ -1,0 +1,12 @@
+# Example multi-dataset YAML for the HYDRA-TOK `custom` dataset mode.
+#
+# Used by `--yaml_path` (CustomJSONDataset). Each entry points to a JSON
+# annotation file; every item must contain an absolute "image" path (or a
+# path relative to the JSON's location).
+#
+# Example annotation JSON:
+#   [{"image": "/data/ds1/images/00001.jpg"}, {"image": "/data/ds1/images/00002.jpg"}]
+
+datasets:
+  - json_path: /path/to/your/annotation_file_1.json
+  - json_path: /path/to/your/annotation_file_2.json

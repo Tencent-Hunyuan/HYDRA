@@ -1,0 +1,79 @@
+# ==============================================================================
+# HYDRA-TOK stage-2 training: large-scale refinement with flow + LPIPS + GAN loss
+#
+# Launch (single node, 8 GPUs):
+#   torchrun --nproc_per_node=8 train_stage2_gan.py --config configs/stage2_gan.yaml
+# Multi node:
+#   bash train_multinode.sh
+# Any field below can also be overridden on the command line:
+#   torchrun --nproc_per_node=8 train_stage2_gan.py --config configs/stage2_gan.yaml --lr=5e-5
+# ==============================================================================
+
+# ---- model input ----
+image_size: 448
+patch_size: 14
+
+# ---- optimization ----
+batch_size: 1024         # global batch size across all GPUs
+epochs: 5
+seed: 123
+lr: 1.0e-4
+min_lr: 2.0e-5
+adam_beta1: 0.9
+adam_beta2: 0.95
+warmup_steps: 100
+
+# ---- loss ----
+lambda_f: 1.0            # flow loss (includes MSE + LPIPS + GAN)
+max_grad_norm: 1.0        # generator gradient clipping (null disables)
+disc_max_grad_norm: 1.0   # discriminator gradient clipping
+lpips_weight: 1.0        # stage-2 LPIPS weight (stage 1 uses 0.1)
+
+# ---- stage-2 loss recipe: KL/BN off, stronger LPIPS + GAN ----
+use_kl_loss: false       # VAE KL regularization off in stage 2
+use_bn_loss: false       # bottleneck consistency loss off in stage 2
+kl_weight: 1.0e-4        # VAE KL weight (only used when use_kl_loss is true)
+bn_weight: 0.5           # bottleneck consistency weight (only used when use_bn_loss is true)
+gan_weight_base: 0.5     # base GAN weight (kept below 1 so the GAN loss cannot dominate)
+
+# ---- paths ----
+# Pretrained InternViT image processor; only its normalization statistics
+# (mean/std) are used to build the training transform.
+processor_path: /path/to/InternViT-300M-448px-V2_5
+
+# ---- GAN ----
+use_gan: true
+gan_start_epoch: 0        # epoch at which the generator GAN loss turns on
+disc_start_epoch: 0      # epoch at which the discriminator starts updating
+disc_lr: 1.0e-4
+disc_min_lr: 2.0e-5
+disc_warmup_steps: 100
+disc_updates: 1          # discriminator updates per generator update
+max_d_weight: 1.0e4      # adaptive discriminator-weight cap
+use_adaptive_gan_weight: true
+disc_crop_size: 224       # random-crop size fed to the discriminator
+dino_ckpt_path: /path/to/dino_vit_small_patch8_224.pth   # DINO ViT-S/8 weights
+
+# ---- initialization ----
+# Stage 2 resumes from the stage-1 checkpoint (or an earlier stage-2 run).
+resume_from_checkpoint: /path/to/results/hydra-tok-stage1/final_model.pth
+
+# ---- paths ----
+output_dir: /path/to/results/hydra-tok-stage2-gan
+eval_data_path: /path/to/eval_images
+yaml_path: /path/to/datasets.yaml
+use_yaml_dataset: false   # set true to also load the YAML-configured datasets
+
+# ---- datasets (StandardImageDataset format) ----
+# Each entry needs: root, data_info_file, and optionally min_resolution / sample_ratio.
+# data_info.json format: [{"image": "000000/0000001.jpg", "annotation": "..."}, ...]
+# images live under <root>/local_folder/...
+stage2_datasets:
+  - root: /path/to/dataset_1
+    data_info_file: data_info.json
+    min_resolution: 448
+    sample_ratio: 0.1
+  - root: /path/to/dataset_2
+    data_info_file: data_info.json
+    min_resolution: null
+    sample_ratio: null

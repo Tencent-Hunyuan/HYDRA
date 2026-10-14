@@ -1,0 +1,63 @@
+# ==============================================================================
+# HYDRA-TOK stage-1 training: distillation from a pretrained InternViT teacher
+#
+# Launch (single node, 8 GPUs):
+#   torchrun --nproc_per_node=8 train_stage1.py --config configs/stage1.yaml
+# Any field below can also be overridden on the command line:
+#   torchrun --nproc_per_node=8 train_stage1.py --config configs/stage1.yaml --lr=1e-4
+# ==============================================================================
+
+# ---- model input ----
+image_size: 448
+patch_size: 14
+
+# ---- optimization ----
+batch_size: 256          # global batch size across all GPUs
+epochs: 30
+seed: 123
+lr: 2.0e-4
+min_lr: 2.0e-5
+adam_beta1: 0.9
+adam_beta2: 0.95
+warmup_steps: 100
+
+# ---- loss weights ----
+lambda_f: 1.0            # flow-matching reconstruction loss
+max_grad_norm: 1.0
+lambda_d_front: 1.0      # teacher distillation loss (front layers)
+distillation_beta: 3.0   # adaptive coefficient inside the distillation loss
+
+# ---- stage-1 loss recipe: flow MSE + KL + BN + LPIPS ----
+use_kl_loss: true        # VAE KL regularization on/off
+use_bn_loss: true        # bottleneck consistency loss on/off
+kl_weight: 1.0e-4        # VAE KL weight (start small to prevent posterior collapse)
+bn_weight: 0.5           # bottleneck consistency weight
+lpips_weight: 0.1        # one-step LPIPS perceptual weight (stage 2 uses 1.0)
+
+# ---- initialization ----
+init_from_teacher: true   # initialize student weights from the InternViT teacher
+
+# ---- paths ----
+# Frozen InternViT teacher (distillation source) and its image processor
+# (only the normalization statistics of the processor are used).
+teacher_path: /path/to/InternViT-300M-448px-V2_5
+processor_path: /path/to/InternViT-300M-448px-V2_5
+imagenet_path: /path/to/ImageNet-1K              # ImageNet root (expects <path>/train)
+output_dir: /path/to/results/hydra-tok-stage1
+eval_data_path: /path/to/eval_images             # folder of eval images (any image set, e.g. COCO val)
+yaml_path: /path/to/datasets.yaml               # CustomJSONDataset multi-dataset YAML
+
+# ---- dataset selection ----
+# One of: imagenet | custom | sam | imagenet_custom | imagenet_custom_sam | combined
+#   imagenet            : ImageNet only
+#   custom              : the YAML-configured json datasets only
+#   sam                 : SAM-1B only
+#   imagenet_custom     : ImageNet + custom YAML
+#   imagenet_custom_sam : ImageNet + custom YAML + SAM-1B
+#   combined            : ImageNet + custom YAML + SAM-1B (stage-1 default)
+dataset_type: combined
+
+# ---- SAM-1B (public) ----
+sam_image_root: /path/to/SA-1B/image
+sam_caption_root: /path/to/SA-1B/captions
+sam_dataset_size: 12000000
