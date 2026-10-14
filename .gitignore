@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Environments
+.env
+.venv
+env/
+venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs & experiment outputs
+*.log
+logs/
+wandb/
+debug_latents/
+results/
+eval_output/
+stats/
+*.out
+
+# Model weights (too large for git)
+*.pth
+*.pt
+*.bin
+*.safetensors
+*.ckpt
+
+# keep the small LPIPS linear-head weights that ship with the code
+!hydra_tok/disc/.caches/vgg.pth
+
+# Data
+*.parquet
+*.arrow
+
+# Hosts file for multi-node launches is machine-specific
+hosts.txt
+
+# OS
+.DS_Store
