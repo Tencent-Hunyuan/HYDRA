@@ -1,0 +1,114 @@
+use_compile: false
+compile_mode: default
+do_warmup: true
+wandb:
+  entity: null
+  resume: auto
+experiment:
+  project: wise-hydra_tok
+  name: wise-hydra-tok-1.5b
+  output_dir: /path/to/checkpoint/wise_output
+model:
+  weight_type: bfloat16
+  vae_model:
+    type: hydra_tok
+  hydra_tok_model:
+    hydra_tok_config: ./models/hydra_tok
+    # Released HYDRA-TOK (GAN-finetuned -- recommended for generation) and its
+    # latent statistics. The latent stats are REQUIRED: the flow head consumes
+    # normalized latents. Both are fetched from HuggingFace into the standard
+    # cache on first run; swap either for a local path to skip the download.
+    pretrained_model_path: hf://Xuerui123/HYdra/hydra_tok_gan
+    latent_stats_path: hf://Xuerui123/HYdra/hydra_tok_latent_stats.pt
+    gen_layers: 12
+    und_layers: 12
+  llm:
+    model_name: HYDRA
+    load_from_llm: false
+    pretrained_model_path: null
+    # Feeds AutoTokenizer.from_pretrained / from_pretrained directly, so a bare
+    # HF repo id works as-is (cached on first run). Point it at a local
+    # checkout instead if you already have one.
+    llm_model_path: Qwen/Qwen2.5-1.5B-Instruct
+    llm_vocab_size: null
+    hidden_size: 1536
+    image_latent_dim: 64
+    image_latent_height: 32
+    image_latent_width: 32
+    hq_image_latent_height: 32
+    hq_image_latent_width: 32
+    patch_size: 1
+    num_diffusion_layers: 10
+    add_qk_norm: true
+    add_time_embeds: true
+training:
+  seed: 42
+dataset:
+  params:
+    validation_prompts_file: /path/to/geneval/geneval_prompt.jsonl
+  preprocessing:
+    max_seq_length: 1560
+    resolution: 448
+    num_t2i_image_tokens: 1024
+    num_mmu_image_tokens: 1024
+    num_video_tokens: 3645
+    latent_height: ${model.llm.image_latent_height}
+    latent_width: ${model.llm.image_latent_width}
+    video_latent_height: ${model.llm.image_latent_height}
+    video_latent_width: ${model.llm.image_latent_width}
+transport:
+  path_type: Linear
+  prediction: velocity
+  loss_weight: null
+  train_eps: null
+  sample_eps: null
+  snr_type: lognorm
+  sampling_method: euler
+  # --- Sampling protocol. These are the ONLY knobs that affect generation; there
+  # --- are deliberately no duplicate top-level `guidance_scale` /
+  # --- `num_inference_steps` keys. Override as `transport.<key>=...`.
+  # guidance_scale 5.0 is the setting used for every reported benchmark
+  # (GenEval, DPG-Bench and WISE, both model sizes).
+  guidance_scale: 5.0
+  # 50 steps is the 1.5B GenEval/WISE setting. DPG-Bench used 100 (both sizes);
+  # the 7B used 200 for GenEval and WISE.
+  num_inference_steps: 50
+  atol: 1e-6
+  rtol: 1e-3
+  reverse: false
+  # Timestep shift. `time_shifting_factor` is the ONLY shift that affects
+  # sampling: integrators.py applies t -> t / (t + f - f*t) to the uniform
+  # linspace. The 1.5B benchmarks used 5.0; the 7B used 3.0 (as did training,
+  # for both sizes) -- pass transport.time_shifting_factor=3.0 with the 7B.
+  # Setting it to 0.0 disables the shift and gives a train/test mismatch.
+  time_shifting_factor: 5.0
+  # NOTE: `do_shift` is a *training-only* knob -- Transport.sample() uses it to
+  # shift sampled timesteps during loss computation (transport.py:146). The
+  # inference path (Sampler.sample_ode -> ODE) never receives it, so changing it
+  # here has no effect on generated images. Kept for config compatibility with
+  # the training YAMLs.
+  do_shift: true
+  # CFG tricks. cfg_start/cfg_end restrict CFG to a time window (0.0-1.0 = always
+  # on). rescale_factor is the Rescaled-CFG mix (1.0 = off; 0.7 is a common value).
+  cfg_start: 0.0
+  cfg_end: 1.0
+  rescale_factor: 1.0
+batch_size: 4
+n_samples: 4
+num_devices: 1
+device_id: 0
+auto_exclude_llm_from_ema: false
+skip_grid: false
+# Released HYDRA-1.5B, fetched from HuggingFace on first run (a few GB) into
+# the standard cache. For a local copy instead, use either:
+#   model_path=../../ckpt/hydra_1.5b            (after `huggingface-cli download`)
+#   model_path=/abs/path/to/checkpoint-20000
+# `hf://` paths are resolved by tools/utils.py:get_config(); set
+# HYDRA_HF_SKIP_DOWNLOAD=1 to leave them untouched (e.g. on an offline box).
+#
+# 7B: model_path=hf://Xuerui123/HYdra/hydra_7b
+#     model.llm.llm_model_path=Qwen/Qwen2.5-7B-Instruct
+#     model.llm.hidden_size=3584
+model_path: hf://Xuerui123/HYdra/hydra_1.5b
+t2i_prompts_file: ./prompts/t2i_prompts.txt
+output_dir: ./t2i_output
